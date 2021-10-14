@@ -1,47 +1,62 @@
-version: '3.5'
+version: "3.5"
+
 services:
-  
-  spire-server:
-    image: spire-server:latest
-    build:
-      context: ./
-      dockerfile: Dockerfile
-      target: spire-server
-    container_name: test-infra_spire-server_1
-    hostname: spire-server
-    volumes:
-      - ./hashes:/opt/spire/.data/hashes
 
   spire-agent:
-    pid: "host"
-    container_name: test-infra_spire-agent_1
-    privileged: true
+    container_name: spire-agent
+    image: spire-agent:${TAG:-latest}
     build:
       context: ./
       dockerfile: Dockerfile
       target: spire-agent
-    image: spire-agent:latest
-    depends_on: 
-      - seed
-      - spire-server
-    hostname: spire-agent
+      args:
+        BASE_IMAGE_STAGE: ${BASE_IMAGE_STAGE:-distroless-base}
+    command:
+      - "spire-agent"
+      - "run"
+      - "-expandEnv"
+      - "-insecureBootstrap"
+    environment:
+      TRUST_DOMAIN: test.local
+      SERVER_ADDRESS: spire-server
+      SERVER_PORT: "8081"
+      SOCKET_PATH: /var/run/spire/agent.sock
     volumes:
       - simulator-data:/opt/tpm-simulator/.data
+    depends_on:
+      - spire-server
+      - seed
+    
+  spire-server:
+    container_name: spire-server
+    image: spire-server:${TAG:-latest}
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: spire-server
+      args:
+        BASE_IMAGE_STAGE: ${BASE_IMAGE_STAGE:-distroless-base}
+    environment:
+      TRUST_DOMAIN: test.local
+    volumes:
+      - ./hashes:/opt/spire/.data/hashes
 
   spire-tools:
     container_name: spire-tpm-pubhash
-    image: spire-tpm-pubhash:latest
+    image: spire-tpm-pubhash:${TAG:-latest}
     build:
       context: ./
       dockerfile: Dockerfile
       target: spire-tools
+      args:
+        BASE_IMAGE_STAGE: ${BASE_IMAGE_STAGE:-distroless-base}
     command:
       - "get_tpm_pubhash"
       - "/opt/tpm-simulator/.data"
     volumes:
       - simulator-data:/opt/tpm-simulator/.data
     depends_on:
-      - seed
+      - seed      
 
   seed:
     image: busybox
