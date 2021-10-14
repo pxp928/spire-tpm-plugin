@@ -1,0 +1,58 @@
+version: '3.5'
+services:
+  
+  spire-server:
+    image: spire-server:latest
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: spire-server
+    container_name: test-infra_spire-server_1
+    hostname: spire-server
+    volumes:
+      - ./hashes:/opt/spire/.data/hashes
+
+  spire-agent:
+    pid: "host"
+    container_name: test-infra_spire-agent_1
+    privileged: true
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: spire-agent
+    image: spire-agent:latest
+    depends_on: 
+      - seed
+      - spire-server
+    hostname: spire-agent
+    volumes:
+      - simulator-data:/opt/tpm-simulator/.data
+
+  spire-tools:
+    container_name: spire-tpm-pubhash
+    image: spire-tpm-pubhash:latest
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: spire-tools
+    command:
+      - "get_tpm_pubhash"
+      - "/opt/tpm-simulator/.data"
+    volumes:
+      - simulator-data:/opt/tpm-simulator/.data
+    depends_on:
+      - seed
+
+  seed:
+    image: busybox
+    container_name: spire-seed
+    command:
+      - sh
+      - -c
+      - |
+        printf "12345" > /opt/tpm-simulator/.data/seed
+    volumes:
+      - simulator-data:/opt/tpm-simulator/.data
+
+volumes:
+  simulator-data: {}
