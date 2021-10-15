@@ -4,23 +4,11 @@ services:
 
   spire-agent:
     container_name: spire-agent
-    image: spire-agent:${TAG:-latest}
+    image: spire-agent:simulator
     build:
       context: ./
       dockerfile: Dockerfile
       target: spire-agent
-      args:
-        BASE_IMAGE_STAGE: ${BASE_IMAGE_STAGE:-distroless-base}
-    command:
-      - "spire-agent"
-      - "run"
-      - "-expandEnv"
-      - "-insecureBootstrap"
-    environment:
-      TRUST_DOMAIN: test.local
-      SERVER_ADDRESS: spire-server
-      SERVER_PORT: "8081"
-      SOCKET_PATH: /var/run/spire/agent.sock
     volumes:
       - simulator-data:/opt/tpm-simulator/.data
     depends_on:
@@ -29,27 +17,24 @@ services:
     
   spire-server:
     container_name: spire-server
-    image: spire-server:${TAG:-latest}
+    image: spire-server:simulator
     build:
       context: ./
       dockerfile: Dockerfile
       target: spire-server
-      args:
-        BASE_IMAGE_STAGE: ${BASE_IMAGE_STAGE:-distroless-base}
     environment:
       TRUST_DOMAIN: test.local
+      REGISTRATION_UDS_PATH: /var/run/spire/spire-registration.sock
     volumes:
       - ./hashes:/opt/spire/.data/hashes
 
   spire-tools:
     container_name: spire-tpm-pubhash
-    image: spire-tpm-pubhash:${TAG:-latest}
+    image: spire-tpm-pubhash:simulator
     build:
       context: ./
       dockerfile: Dockerfile
       target: spire-tools
-      args:
-        BASE_IMAGE_STAGE: ${BASE_IMAGE_STAGE:-distroless-base}
     command:
       - "get_tpm_pubhash"
       - "/opt/tpm-simulator/.data"
