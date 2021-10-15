@@ -1,0 +1,55 @@
+version: "3.5"
+
+services:
+
+  spire-agent:
+    container_name: spire-agent
+    image: spire-agent:${TAG:-latest}
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: spire-agent
+      args:
+        BASE_IMAGE_STAGE: ${BASE_IMAGE_STAGE:-distroless-base}
+        SPIRE_VERSION: "$SPIRE_VERSION"
+        SPIRE_TPM_PLUGIN_VERSION: "${SPIRE_TPM_PLUGIN_VERSION}${SIMULATOR_SUFFIX:-}"
+    command:
+      - "spire-agent"
+      - "run"
+      - "-expandEnv"
+      - "-insecureBootstrap"
+    environment:
+      TRUST_DOMAIN: test.local
+      SERVER_ADDRESS: spire-server
+      SERVER_PORT: "8081"
+      SOCKET_PATH: /var/run/spire/agent.sock
+    depends_on:
+      - spire-server
+    
+  spire-server:
+    container_name: spire-server
+    image: spire-server:${TAG:-latest}
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: spire-server
+      args:
+        BASE_IMAGE_STAGE: ${BASE_IMAGE_STAGE:-distroless-base}
+        SPIRE_VERSION: "$SPIRE_VERSION"
+        SPIRE_TPM_PLUGIN_VERSION: "${SPIRE_TPM_PLUGIN_VERSION}${SIMULATOR_SUFFIX:-}"
+    environment:
+      TRUST_DOMAIN: test.local
+    volumes:
+      - ./hashes:/opt/spire/.data/hashes
+
+  spire-tools:
+    container_name: spire-tpm-pubhash
+    image: spire-tpm-pubhash:${TAG:-latest}
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: spire-tools
+      args:
+        BASE_IMAGE_STAGE: ${BASE_IMAGE_STAGE:-distroless-base}
+        SPIRE_VERSION: "$SPIRE_VERSION"
+        SPIRE_TPM_PLUGIN_VERSION: "${SPIRE_TPM_PLUGIN_VERSION}${SIMULATOR_SUFFIX:-}"

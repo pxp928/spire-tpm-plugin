@@ -1,0 +1,32 @@
+version: "3.5"
+
+services:
+
+  seed:
+    image: busybox
+    container_name: spire-seed
+    command:
+      - sh
+      - -c
+      - |
+        printf "12345" > /opt/tpm-simulator/.data/seed
+    volumes:
+      - simulator-data:/opt/tpm-simulator/.data
+  
+  spire-agent:
+    volumes:
+      - simulator-data:/opt/tpm-simulator/.data
+    depends_on:
+      - seed
+
+  spire-tools:
+    command:
+      - "get_tpm_pubhash"
+      - "/opt/tpm-simulator/.data"
+    volumes:
+      - simulator-data:/opt/tpm-simulator/.data
+    depends_on:
+      - seed
+
+volumes:
+  simulator-data: {}

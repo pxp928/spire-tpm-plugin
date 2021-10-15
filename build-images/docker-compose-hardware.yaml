@@ -1,0 +1,11 @@
+version: "3.5"
+
+services:
+
+  spire-agent:
+    devices: 
+      - /dev/tpmrm0:/dev/tpmrm0
+
+  spire-tools:
+    devices: 
+      - /dev/tpmrm0:/dev/tpmrm0

@@ -1,0 +1,43 @@
+version: "3.5"
+
+services:
+  
+  spire-agent:
+    build:
+      target: socat-spire-agent
+    command:
+      - sh
+      - -c
+      - |
+        trap : TERM INT
+        socat tcp-listen:8083,reuseaddr,fork unix-connect:/var/run/spire/agent.sock &
+        spire-agent run -expandEnv -insecureBootstrap &
+        wait
+    networks:
+      - dev
+    volumes:
+      - /var/run/spire:/var/run/spire
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  spire-server:
+    build:
+      target: socat-spire-server
+    command:
+      - sh
+      - -c
+      - |
+        trap : TERM INT
+        socat tcp-listen:8082,reuseaddr,fork unix-connect:/var/run/spire/registration.sock &
+        spire-server run -expandEnv &
+        wait
+    environment:
+      REGISTRATION_UDS_PATH: /var/run/spire/registration.sock
+    networks:
+      - dev
+    volumes:
+      - /var/run/spire:/var/run/spire
+
+networks:
+  dev:
+    external: true
+    name: spire-dev
